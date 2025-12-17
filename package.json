@@ -1,0 +1,38 @@
+{
+  "name": "algoengine",
+  "version": "1.0.0",
+  "description": "Multi-user webhook-based algo trading engine with broker adapters",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:setup": "node scripts/setup-db.js",
+    "db:migrate": "node scripts/migrate.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "trading",
+    "algo",
+    "webhook",
+    "tradingview",
+    "multi-broker"
+  ],
+  "author": "Uptrender Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.5",
+    "dotenv": "^16.3.1",
+    "crypto": "^1.0.1",
+    "axios": "^1.6.2",
+    "winston": "^3.11.0",
+    "async-mutex": "^0.4.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
