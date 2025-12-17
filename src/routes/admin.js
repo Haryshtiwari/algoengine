@@ -93,28 +93,6 @@ router.get('/', async (req, res) => {
       ORDER BY p.createdAt DESC
     `);
 
-    // Fetch recent order logs
-    const orders = await db.query(`
-      SELECT 
-        ol.id,
-        ol.userId,
-        u.name as userName,
-        ol.strategyId,
-        ol.positionId,
-        ol.side,
-        ol.qty,
-        ol.orderType,
-        ol.fillPrice,
-        ol.status,
-        ol.brokerOrderId,
-        ol.errorMessage,
-        ol.createdAt
-      FROM order_logs ol
-      LEFT JOIN users u ON ol.userId = u.id
-      ORDER BY ol.createdAt DESC
-      LIMIT 100
-    `);
-
     // Fetch statistics
     const stats = await db.query(`
       SELECT 
@@ -122,8 +100,7 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM execution_logs WHERE DATE(createdAt) = CURDATE()) as todayExecutions,
         (SELECT COUNT(*) FROM positions WHERE status='OPEN') as openPositions,
         (SELECT COUNT(DISTINCT userId) FROM execution_logs WHERE DATE(createdAt) = CURDATE()) as activeUsers,
-        (SELECT COUNT(*) FROM order_logs WHERE status='FILLED' AND DATE(createdAt) = CURDATE()) as successfulOrders,
-        (SELECT COUNT(*) FROM order_logs WHERE (status='REJECTED' OR status='CANCELLED') AND DATE(createdAt) = CURDATE()) as failedOrders
+        (SELECT COUNT(*) FROM positions WHERE status='CLOSED' AND DATE(updatedAt) = CURDATE()) as closedToday
     `);
 
     const statsData = stats[0] || {
@@ -131,8 +108,7 @@ router.get('/', async (req, res) => {
       todayExecutions: 0,
       openPositions: 0,
       activeUsers: 0,
-      successfulOrders: 0,
-      failedOrders: 0
+      closedToday: 0
     };
 
     // Render HTML dashboard
@@ -140,7 +116,6 @@ router.get('/', async (req, res) => {
       signals || [],
       executions || [],
       positions || [],
-      orders || [],
       statsData
     ));
 
@@ -161,7 +136,7 @@ router.get('/', async (req, res) => {
 /**
  * Generate HTML dashboard
  */
-function generateDashboardHTML(signals, executions, positions, orders, stats) {
+function generateDashboardHTML(signals, executions, positions, stats) {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -321,7 +296,7 @@ function generateDashboardHTML(signals, executions, positions, orders, stats) {
 <body>
   <div class="header">
     <h1>🚀 AlgoEngine Admin Dashboard</h1>
-    <p>Real-time monitoring of webhook signals, executions, positions & orders</p>
+    <p>Real-time monitoring of webhook signals, executions, and positions</p>
     <p style="margin-top: 5px; font-size: 12px;">
       <strong>Last Updated:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
       <span class="auto-refresh">● Auto-refresh every 10s</span>
@@ -347,12 +322,8 @@ function generateDashboardHTML(signals, executions, positions, orders, stats) {
       <div class="value">${stats.activeUsers}</div>
     </div>
     <div class="stat-card success">
-      <h3>Successful Orders</h3>
-      <div class="value">${stats.successfulOrders}</div>
-    </div>
-    <div class="stat-card danger">
-      <h3>Failed Orders</h3>
-      <div class="value">${stats.failedOrders}</div>
+      <h3>Closed Today</h3>
+      <div class="value">${stats.closedToday}</div>
     </div>
   </div>
 
@@ -464,48 +435,6 @@ function generateDashboardHTML(signals, executions, positions, orders, stats) {
                   '<span class="badge badge-skip">SKIP</span>'}
               </td>
               <td>${e.reason || '-'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Recent Orders -->
-  <div class="section">
-    <h2>📝 Recent Order Logs (Last 100)</h2>
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>User</th>
-            <th>Side</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Status</th>
-            <th>Broker Order ID</th>
-            <th>Error</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${orders.map(o => `
-            <tr>
-              <td class="timestamp">${new Date(o.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
-              <td><strong>${o.userName}</strong> <span class="mono">#${o.userId}</span></td>
-              <td>
-                ${o.side === 'BUY' ? '<span class="badge badge-long">BUY</span>' : 
-                  '<span class="badge badge-short">SELL</span>'}
-              </td>
-              <td><strong>${o.qty}</strong></td>
-              <td>${o.fillPrice ? '₹' + parseFloat(o.fillPrice).toLocaleString() : '-'}</td>
-              <td>
-                ${o.status === 'FILLED' ? '<span class="badge badge-success">FILLED</span>' :
-                  o.status === 'REJECTED' || o.status === 'CANCELLED' ? '<span class="badge badge-failed">FAILED</span>' :
-                  '<span class="badge badge-pending">PENDING</span>'}
-              </td>
-              <td class="mono" style="font-size: 11px;">${o.brokerOrderId || '-'}</td>
-              <td style="color: #ef4444; font-size: 12px;">${o.errorMessage || '-'}</td>
             </tr>
           `).join('')}
         </tbody>

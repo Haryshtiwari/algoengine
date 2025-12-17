@@ -30,6 +30,8 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/webhook', webhookRoutes);
+app.use('/admin', adminRoutes);  // Admin dashboard
+app.use('/logs', adminRoutes);   // Alias for logs page
 app.use('/admin', adminRoutes);
 
 // Root redirect to admin
