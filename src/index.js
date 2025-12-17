@@ -9,6 +9,7 @@ const express = require('express');
 const logger = require('./config/logger');
 const db = require('./config/db');
 const webhookRoutes = require('./routes/webhook');
+const adminRoutes = require('./routes/admin');
 const sltpMonitor = require('./services/sltpMonitor');
 
 const app = express();
@@ -29,6 +30,12 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/webhook', webhookRoutes);
+app.use('/admin', adminRoutes);
+
+// Root redirect to admin
+app.get('/', (req, res) => {
+  res.redirect('/admin');
+});
 
 // Health check
 app.get('/health', (req, res) => {

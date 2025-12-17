@@ -20,8 +20,13 @@ router.post('/tradingview', async (req, res) => {
 
     // Validate webhook secret (basic auth)
     const providedSecret = req.headers['x-webhook-secret'] || req.body.secret;
-    if (providedSecret !== process.env.WEBHOOK_SECRET) {
-      logger.warn('⚠️  Unauthorized webhook attempt', { ip: req.ip });
+    const expectedSecret = process.env.WEBHOOK_SECRET;
+    
+    if (providedSecret !== expectedSecret) {
+      logger.warn('⚠️  Unauthorized webhook attempt', { 
+        ip: req.ip,
+        providedSecret: providedSecret ? '***' : 'missing'
+      });
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

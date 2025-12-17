@@ -4,7 +4,7 @@ module.exports = {
     script: 'src/index.js',
     cwd: '/var/www/Algoengine',
     instances: 1,
-    exec_mode: 'cluster',
+    exec_mode: 'fork',
     autorestart: true,
     watch: false,
     max_memory_restart: '500M',
